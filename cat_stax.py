@@ -1,7 +1,5 @@
 import numpy as np
 import pandas as pd
-import itertools
-
 
 ############################################CAT STATE GENERATION###############################################################################
 # let's start this all in two dimensions, which is probably gonna be a pain later, but should make this a lot easier.
