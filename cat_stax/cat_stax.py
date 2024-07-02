@@ -63,7 +63,11 @@ cat_states["black"] = black
 
 ########GENERATE ALL POSSIBLE ORIENTATIONS OF EACH PIECE
 
-# this is buildup to a dumb manual function for removing duplicate arrays in a list of m x n numpy arrays
+# this is buildup to a dumb manual function (_remove_dup_arrays) for removing duplicate arrays in a list of m x n numpy arrays because:
+#- numpy arrays aren't hashable so the usual python list uniqueness functions don't work
+#- np.unique can remove duplicate arrays in a list, but only if they all have the same dimension.
+# so we pad arrays to squares, use np.unique, then unpad them.
+# guessing there's a better way of doing this but this works for now.
 
 
 # given m x n numpy array, pads with 0's till it's an m x m or n x n (which ever is bigger) square array.
@@ -155,6 +159,9 @@ for key, val in cat_states.items():
 #####PUZZLE GENERATION########
 # this could be a submodule or something, but keeping it all here to start.
 
+#also might change this to a class so that a puzzle is a set of cat colours
+#paired with the intial array, then solving is a method on it.
+
 
 # missing spaces will be set to value "X"
 # blocked indices is list of (m,n) tuples where an X is placed at the index m,n
@@ -180,7 +187,7 @@ grid16 = init_puzzle_grid(8, 7, blocked_indices=((2, 1), (2, 5), (5, 1), (5, 5))
 
 
 # Cat Placement is a class that holds the state of a given piece attempting to be placed on a puzzle grid
-# Manages iterator of brute force solver -- a given orientation is attempted to be placed from left to right in the puzzle
+# Manages iterator of placement indices-- a given orientation is attempted to be placed from left to right in the puzzle
 # If no valid spot found, orientation index is increased to move to the next piece state and the process repeats.
 # Terminates if indices run out.
 # An orientation is attempted to be placed with it's 0,0 index in the i,j'th index in the puzzle grid :
@@ -193,7 +200,7 @@ grid16 = init_puzzle_grid(8, 7, blocked_indices=((2, 1), (2, 5), (5, 1), (5, 5))
 # ----idx_gen: generator to move through indices and orientations and update class properties as necessary.
 # this is probably dumb and definitely ugly.
 # not sure cat_states needs to be passed through all of this but losing track of what scope i need to call it in.
-# referred to as o_plc for orientation_placement
+# referred to as o_plc in functions for orientation_placement
 class Cat_Placement:
     def __init__(
         self, colour, grid_init, i=-1, j=-1, orientation_idx=0, cat_states=cat_states
@@ -261,7 +268,7 @@ def _is_valid_grid(grid: np.array) -> np.array:
 # custom comparison that immediately throws things out if the index to place things at is has an object in it
 # and orientation[0,0] is not empty.
 # returns true if both indices non-empty (aka, don't bother placeing it), false otherwise (proceed to placement).
-# shaved two seconds off brute force search (from 8 to 6 sections)
+# shaves a lil time off jumping into placement and checking for overlaps in all cases
 def _check_idx_blocked(grid_state: np.array, o_plc: Cat_Placement) -> bool:
     o_idx = o_plc.orientation[0, 0]
     i = o_plc.i
@@ -295,7 +302,8 @@ def _place_o_at_idx(grid_state: np.array, o_plc: Cat_Placement) -> np.array:
 # attempts to place piece by iterating through all remaining placement indices
 # and orientation indices.
 # terminates and returns updated grid state as soon as valid placement is found.
-# otherwise, exception is thrown (from index generator: this might be dumb, i don't know shit about exception handling)
+# otherwise, exception is thrown (from index generator in o_plc: 
+# this should probably be more explicit, i don't know shit about exception handling)
 def place_orientation(grid_state: np.array, o_plc: Cat_Placement) -> np.array:
     # loop until broken by exception or valid placement
     while True:
@@ -326,11 +334,11 @@ def place_orientation(grid_state: np.array, o_plc: Cat_Placement) -> np.array:
 
 
 # for some grid state and some cat (selected by colour),
-# place cat in first valid state found
+# place cat in first valid index/orientation found
 # then return updated grid_state and Cat_Placement object
 # if o_plc=None, initiates Cat_Placement object from grid state, colour, and cat_states definition.
 # otherwise continues from existing Cat_Placement object
-# (should make initation less dumb)
+# (should make initation explict instead of keying off of None)
 def place_cat(
     grid_state: np.array,
     cat_col: str,
