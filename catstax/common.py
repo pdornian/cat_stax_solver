@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 import numpy as np
 
 # everything is two-dimensional right now
@@ -164,6 +165,71 @@ def generate_states(cat: np.array) -> np.array:
 for key, val in cat_states.items():
     cat_states[key] = generate_states(val)
 
+# PLOTTING
+# used to display outputs on matplotlib voxel grid.
+# for colours in plotting
+# may not correspond to colour labels
+colour_map = {
+    "V": "magenta",
+    "T": "teal",
+    "M": "palegreen",
+    "B": "black",
+    "R": "red",
+    "I": "indigo",
+    "S": "cyan",
+    "G": "limegreen",
+    "A": "paleturquoise",
+    "Y": "yellow",
+    "P": "hotpink",
+    "W": "white",
+}
+
+
+def plot_puzzle(solved_puzzle, is_2d=True, colour_map=colour_map, az=0):
+    m = solved_puzzle.shape[0]
+    n = solved_puzzle.shape[1]
+
+    # remove X characters (non-placeable spaces)
+    solved_puzzle = np.strings.replace(solved_puzzle, "X", "")
+
+    # 2d reshape condition, may be irrellevent when generalizing solving routine to 3d
+    if is_2d:
+        solved_puzzle = solved_puzzle.reshape((m, n, 1))
+
+    # pad all puzzles to four voxels high for consistent display
+    z = solved_puzzle.shape[2]
+    solved_puzzle = np.pad(
+        solved_puzzle,
+        [(0, 0), (0, 0), (0, 4 - z)],
+        "constant",
+        constant_values="",
+    )
+
+    # initate puzzle shape array with true val for all non-empty indices
+    puzzle_space = solved_puzzle != ""
+
+    colours = np.empty(puzzle_space.shape, dtype=object)
+    for label, colour in colour_map.items():
+        colour_mask = solved_puzzle == label
+        colours[colour_mask] = colour
+
+    ax = plt.figure().add_subplot(projection="3d")
+    # we're really just plotting a m x n x 4 grid of voxels for all solutions
+    # it's the facecolours array that dictates what it's going to look like.
+    ax.voxels(puzzle_space, facecolors=colours, edgecolor="gray", shade=False)
+
+    if az != 0:
+        ax.view_init(azim=az)
+
+    ax.axes.set_xlim3d(left=0, right=m)
+    ax.axes.set_ylim3d(bottom=0, top=n)
+    ax.axes.set_zlim3d(bottom=0, top=4)
+    ax.axis("equal")
+    ax.axis("off")
+    plt.show()
+
+    return ax
+
 
 # PIECE PLACEMENT
 
@@ -259,7 +325,7 @@ class Cat_Placement:
                     j = 0
                     i += 1
                 elif o < o_max:
-                    #i and j at max but o not yet maxed
+                    # i and j at max but o not yet maxed
                     # reset i,j to 0,0 and try next orientation
                     # print("exceeded rowcount")
                     i = 0
@@ -382,8 +448,8 @@ def place_cat(
     try:
         # try to place o_plc at it's next o,i,j index
         grid_state = place_orientation(grid_state, o_plc)
-        #StopIteration exception thrown if we're out of o,i,j indices
-        #might only need handling within solve_puzzle
+        # StopIteration exception thrown if we're out of o,i,j indices
+        # might only need handling within solve_puzzle
     except StopIteration:
         raise
 
@@ -412,8 +478,8 @@ cat_priority = {
 }
 
 
-def solve_puzzle(cats: list[str], grid_init: np.array, symmetry=True):
-    #needs a docstring
+def solve_puzzle(cats: list[str], grid_init: np.array, symmetry=True, plot=True):
+    # needs a docstring
 
     # given a list of cat colours and an initial puzzle grid
     # attempts place those pieces onto grid in a valid configuration
@@ -462,7 +528,7 @@ def solve_puzzle(cats: list[str], grid_init: np.array, symmetry=True):
             # then, remove last successfully placed piece and try again
             # (since place_cat will increment idx_gen, we're guaranteed that
             # it will be placed if possible in new location)
-            #----------------
+            # ----------------
 
             # print(f"Placement failed")
 
@@ -495,4 +561,7 @@ def solve_puzzle(cats: list[str], grid_init: np.array, symmetry=True):
             cat_placements[cat_col] = placed_cat
 
     print(grid_state)
+    #hardcoding this for 2d puzzles for now
+    if plot:
+        plot_puzzle(grid_state)
     return grid_state, cat_placements
