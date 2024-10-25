@@ -1,6 +1,9 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
+# import puzzle class from  puzzles. maybe it should live here.
+# dunno. kept it with the hardcoded puzzles.
+from catstax.puzzles import Puzzle
 # everything is two-dimensional right now
 # 3D tbd
 
@@ -478,14 +481,19 @@ cat_priority = {
 }
 
 
-def solve_puzzle(cats: list[str], grid_init: np.array, symmetry=True, plot=True):
+#def solve_puzzle(cats: list[str], grid_init: np.array, symmetry=True, plot=True):
+def solve_puzzle(puz: Puzzle, symmetry=True, plot=True):
     # needs a docstring
 
-    # given a list of cat colours and an initial puzzle grid
+    # given a puzzle object, retrieves cat colours and an initial puzzle grid
     # attempts place those pieces onto grid in a valid configuration
-    # if all pieces placed with no exceptions, returns grid and
-    # dict of Cat Placement objects
+    cats = puz.cats
+    grid_init = puz.grid
 
+    #temp conditional logic while figuring out 3d case:
+    # if grid is 1 x m x n, return m x n array.
+    if puz.layers == 1:
+        grid_init = grid_init[0]
     # sort cats by priority
     # doing this in reverse order so that we can use .pop to
     # get the highest priority piece.

@@ -72,15 +72,13 @@ class Puzzle:
         # uncomment this condition to restrict the stacking
         # to the multilayer case while troubleshooting
 
-        # if layer > 1:
-        grid = np.dstack([grid] * layers)
+        #if layers > 1:
+        #reshaping depth dimension to first dimension for printing sanity
+        grid = np.dstack([grid] * layers).reshape(layers, max_height, max_width)
         return grid
 
 
 #####PUZZLE GENERATION########
-# also might change this to a class so that a puzzle is a set of cat colours
-# paired with the intial array, then solving is a method on it.
-
 
 # manually defining all one layer puzzles
 
