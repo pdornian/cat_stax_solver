@@ -12,55 +12,55 @@ from catstax.puzzles import Puzzle
 # stored in "cat_states" dictionary for indicing/iteration purposes
 cat_states = dict()
 
-white = np.full((2, 3), "W", dtype=str)
-white[0][1:] = ""
+white = np.full((1, 2, 3), "W", dtype=str)
+white[0][0][1:] = ""
 cat_states["white"] = white
 
-pink = np.full((3, 3), "P", dtype=str)
-pink[0][1:] = ""
-pink[2][1] = ""
+pink = np.full((1, 3, 3), "P", dtype=str)
+pink[0][0][1:] = ""
+pink[0][2][1] = ""
 cat_states["pink"] = pink
 
-red = np.full((3, 4), "R", dtype=str)
-red[0][1:] = ""
-red[2][1:3] = ""
+red = np.full((1, 3, 4), "R", dtype=str)
+red[0][0][1:] = ""
+red[0][2][1:3] = ""
 cat_states["red"] = red
 
-yellow = np.full((3, 3), "Y", dtype=str)
-yellow[0][1:] = ""
+yellow = np.full((1, 3, 3), "Y", dtype=str)
+yellow[0][0][1:] = ""
 cat_states["yellow"] = yellow
 
-mint = np.full((3, 3), "M", dtype=str)
-mint[0][0] = ""
-mint[0][2] = ""
-mint[1][0] = ""
+mint = np.full((1, 3, 3), "M", dtype=str)
+mint[0][0][0] = ""
+mint[0][0][2] = ""
+mint[0][1][0] = ""
 cat_states["mint"] = mint
 
-green = np.full((4, 4), "G", dtype=str)
-green[0][0:2] = ""
-green[1][1:3] = ""
-green[3][1:3] = ""
+green = np.full((1, 4, 4), "G", dtype=str)
+green[0][0][0:2] = ""
+green[0][1][1:3] = ""
+green[0][3][1:3] = ""
 cat_states["green"] = green
 
-arctic = np.full((3, 4), "A", dtype=str)
-arctic[0][0:3] = ""
+arctic = np.full((1, 3, 4), "A", dtype=str)
+arctic[0][0][0:3] = ""
 cat_states["arctic"] = arctic
 
-sky = np.full((1, 2), "S", dtype=str)
+sky = np.full((1, 1, 2), "S", dtype=str)
 cat_states["sky"] = sky
 
-teal = np.full((2, 2), "T", dtype=str)
-teal[0][1] = ""
+teal = np.full((1, 2, 2), "T", dtype=str)
+teal[0][0][1] = ""
 cat_states["teal"] = teal
 
-indigo = np.full((2, 2), "I", dtype=str)
+indigo = np.full((1, 2, 2), "I", dtype=str)
 cat_states["indigo"] = indigo
 
-violet = np.full((3, 2), "V", dtype=str)
+violet = np.full((1, 3, 2), "V", dtype=str)
 cat_states["violet"] = violet
 
-black = np.full((3, 3), "B", dtype=str)
-black[0][1] = ""
+black = np.full((1, 3, 3), "B", dtype=str)
+black[0][0][1] = ""
 cat_states["black"] = black
 
 # GENERATE ALL POSSIBLE ORIENTATIONS OF EACH PIECE
