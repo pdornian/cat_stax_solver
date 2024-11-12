@@ -4,6 +4,7 @@ import numpy as np
 # import puzzle class from  puzzles. maybe it should live here.
 # dunno. kept it with the hardcoded puzzles.
 from catstax.puzzles import Puzzle
+
 # everything is two-dimensional right now
 # 3D tbd
 
@@ -12,55 +13,55 @@ from catstax.puzzles import Puzzle
 # stored in "cat_states" dictionary for indicing/iteration purposes
 cat_states = dict()
 
-white = np.full((1, 2, 3), "W", dtype=str)
-white[0][0][1:] = ""
+white = np.full((2, 3), "W", dtype=str)
+white[0][1:] = ""
 cat_states["white"] = white
 
-pink = np.full((1, 3, 3), "P", dtype=str)
-pink[0][0][1:] = ""
-pink[0][2][1] = ""
+pink = np.full((3, 3), "P", dtype=str)
+pink[0][1:] = ""
+pink[2][1] = ""
 cat_states["pink"] = pink
 
-red = np.full((1, 3, 4), "R", dtype=str)
-red[0][0][1:] = ""
-red[0][2][1:3] = ""
+red = np.full((3, 4), "R", dtype=str)
+red[0][1:] = ""
+red[2][1:3] = ""
 cat_states["red"] = red
 
-yellow = np.full((1, 3, 3), "Y", dtype=str)
-yellow[0][0][1:] = ""
+yellow = np.full((3, 3), "Y", dtype=str)
+yellow[0][1:] = ""
 cat_states["yellow"] = yellow
 
-mint = np.full((1, 3, 3), "M", dtype=str)
-mint[0][0][0] = ""
-mint[0][0][2] = ""
-mint[0][1][0] = ""
+mint = np.full((3, 3), "M", dtype=str)
+mint[0][0] = ""
+mint[0][2] = ""
+mint[1][0] = ""
 cat_states["mint"] = mint
 
-green = np.full((1, 4, 4), "G", dtype=str)
-green[0][0][0:2] = ""
-green[0][1][1:3] = ""
-green[0][3][1:3] = ""
+green = np.full((4, 4), "G", dtype=str)
+green[0][0:2] = ""
+green[1][1:3] = ""
+green[3][1:3] = ""
 cat_states["green"] = green
 
-arctic = np.full((1, 3, 4), "A", dtype=str)
-arctic[0][0][0:3] = ""
+arctic = np.full((3, 4), "A", dtype=str)
+arctic[0][0:3] = ""
 cat_states["arctic"] = arctic
 
-sky = np.full((1, 1, 2), "S", dtype=str)
+sky = np.full((1, 2), "S", dtype=str)
 cat_states["sky"] = sky
 
-teal = np.full((1, 2, 2), "T", dtype=str)
-teal[0][0][1] = ""
+teal = np.full((2, 2), "T", dtype=str)
+teal[0][1] = ""
 cat_states["teal"] = teal
 
-indigo = np.full((1, 2, 2), "I", dtype=str)
+indigo = np.full((2, 2), "I", dtype=str)
 cat_states["indigo"] = indigo
 
-violet = np.full((1, 3, 2), "V", dtype=str)
+violet = np.full((3, 2), "V", dtype=str)
 cat_states["violet"] = violet
 
-black = np.full((1, 3, 3), "B", dtype=str)
-black[0][0][1] = ""
+black = np.full((3, 3), "B", dtype=str)
+black[0][1] = ""
 cat_states["black"] = black
 
 # GENERATE ALL POSSIBLE ORIENTATIONS OF EACH PIECE
@@ -75,11 +76,11 @@ cat_states["black"] = black
 
 
 def _pad_to_square(array: np.array) -> np.array:
-    # given m x n numpy array, pads with 0's so it iss an m x m or n x n
+    # given m x n numpy array, pads with 0's so it is an m x m or n x n
     # (which ever is bigger) square array.
     # pads w/ "0" by default -- would be more consistent to use empty string
     # but doesn't really matter for private func.
-
+    print(array)
     m, n = array.shape
 
     if m < n:
@@ -139,11 +140,36 @@ def _generate_rotations(cat: np.array) -> np.array:
     return states
 
 
+# using this after generating all rotations of pieces in 2d axis
+# to move to 3d array notation.
+# 3 possible unique orientations depending on if embedded in x, y or z.
+# lil janky, but means i don't have to adjust rot functions.
+
+
+def _3d_bootstrap(cat: np.array) -> list[np.array]:
+    """Given a cat, returns a list of three 3d arrays
+        corresponding to it being embedded in each of the x, y, or z dimensions.
+
+    Args:
+        cat (np.array): n x m array
+
+    Returns:
+        list[np.array]: [1 x n x m array, n x 1 x m array, n x m x 1 array]
+    """
+    r, c = cat.shape
+    # single z-axis orientation
+    # single row axis orientation,
+    # single column axis orientation
+    return [cat.reshape(1, r, c), cat.reshape(r, 1, c), cat.reshape(r, c, 1)]
+
+
 def generate_states(cat: np.array) -> np.array:
-    """Generates up to 8 rotation states of cats
+    """Generates up to 24 orientation states of cats
     - rotations,
     - flip followed by rotations,
-    - then removes any duplicates and returns orientation list.
+    - then removes any duplicates,
+    - then embeds each in x, y, and z dimension (as 3d array representation)
+    - then returns orientation list.
 
     Args:
         cat (np.array): Numpy array representing cat shape.
@@ -159,7 +185,11 @@ def generate_states(cat: np.array) -> np.array:
 
     states.extend(f_states)
     states = _remove_dup_arrays(states)
-    return states
+
+    xyz_states = []
+    for state in states:
+        xyz_states.extend(_3d_bootstrap(state))
+    return xyz_states
 
 
 # GENERATE CAT_STATES
@@ -481,7 +511,7 @@ cat_priority = {
 }
 
 
-#def solve_puzzle(cats: list[str], grid_init: np.array, symmetry=True, plot=True):
+# def solve_puzzle(cats: list[str], grid_init: np.array, symmetry=True, plot=True):
 def solve_puzzle(puz: Puzzle, symmetry=True, plot=True):
     # needs a docstring
 
@@ -490,7 +520,7 @@ def solve_puzzle(puz: Puzzle, symmetry=True, plot=True):
     cats = puz.cats
     grid_init = puz.grid
 
-    #temp conditional logic while figuring out 3d case:
+    # temp conditional logic while figuring out 3d case:
     # if grid is 1 x m x n, return m x n array.
     if puz.layers == 1:
         grid_init = grid_init[0]
@@ -569,7 +599,7 @@ def solve_puzzle(puz: Puzzle, symmetry=True, plot=True):
             cat_placements[cat_col] = placed_cat
 
     print(grid_state)
-    #hardcoding this for 2d puzzles for now
+    # hardcoding this for 2d puzzles for now
     if plot:
         plot_puzzle(grid_state)
     return grid_state, cat_placements
