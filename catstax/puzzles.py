@@ -1,7 +1,7 @@
 import numpy as np
 
 # reference of valid cat colour names
-valid_cat_cols = [
+all_cats = [
     "white",
     "pink",
     "red",
@@ -23,7 +23,7 @@ class Puzzle:
     # - a (colour label) list of cats
     # - the number of layers.
     # blocked slices list may be passed slices or indices.
-    # slice is: ((i_min,  i_max), (j_min, j_max)]
+    # slice is: ((i_min,  i_max), (j_min, j_max)] (non inclusive)
     # indice is: (i, j)
     # careful with negatives
     def __init__(
@@ -66,15 +66,8 @@ class Puzzle:
                 j_min, j_max = slice[1]
                 grid[i_min:i_max, j_min:j_max] = "X"
 
-        ####THIS PART MIGHT BREAK EXISTING CODE FROM ADDING EXTRA DIMENSION IN 2D CASE,
-        # COME BACK TO IT LATER
-        # if this really goes haywire and breaks the 2d solve routine,
-        # uncomment this condition to restrict the stacking
-        # to the multilayer case while troubleshooting
-
-        # if layers > 1:
-        # reshaping depth dimension to first dimension for printing sanity
-        grid = np.dstack([grid] * layers).reshape(layers, max_height, max_width)
+        #stack grid for number of layers
+        grid = np.vstack([grid.reshape(1, max_height, max_width)] * layers)
         return grid
 
 
@@ -152,6 +145,26 @@ Puzzle16 = Puzzle(
     blocked_slices=((2, 1), (2, 5), (5, 1), (5, 5)),
 )
 
+Puzzle18 = Puzzle(4, 5,
+                  cats=['arctic', 'indigo', 'teal', 'yellow', 'white', 'sky', 'red'],
+                  blocked_slices=[((1, 3), (2, 3))], layers=2)
+Puzzle23 = Puzzle(
+    3,
+    6,
+    cats=[
+        "arctic",
+        "violet",
+        "teal",
+        "yellow",
+        "mint",
+        "pink",
+        "black",
+        "sky",
+        "red",
+    ],
+    layers=3,
+)
+
 Puzzle24 = Puzzle(
     5,
     4,
@@ -169,3 +182,5 @@ Puzzle24 = Puzzle(
     ],
     layers=3,
 )
+
+Puzzle40 = Puzzle(5, 5, cats=all_cats, blocked_slices=[(2,2)])

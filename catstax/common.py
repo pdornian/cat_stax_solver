@@ -613,9 +613,13 @@ def solve_puzzle(puz: Puzzle, symmetry=True, plot=True):
     # this means while searching solutions we can hold the inital cat to
     # be placed within the (ceiling(m/2), ceiling(n/2)) top left subgrid.
 
-    # iterate until to_place is empty
-    # probably needs a runtime limit
+    # counter for number of iterations
+    placement_iterations = 0
+
     while len(to_place) > 0:
+
+        placement_iterations += 1
+
         # get highest priority piece
         cat_col = to_place[-1]
 
@@ -666,7 +670,7 @@ def solve_puzzle(puz: Puzzle, symmetry=True, plot=True):
             placed_cols.append(to_place.pop())
             # log placement object to cat_placements
             cat_placements[cat_col] = placed_cat
-
+    print(f"total placement iterations: {placement_iterations}")
     print(grid_state)
 
     if plot:
