@@ -5,9 +5,6 @@ import numpy as np
 # dunno. kept it with the hardcoded puzzles.
 from catstax.puzzles import Puzzle
 
-# everything is two-dimensional right now
-# 3D tbd
-
 # CAT STATE GENERATION
 # define each cat piece as an n x m matrix.
 # stored in "cat_states" dictionary for indicing/iteration purposes
@@ -80,7 +77,6 @@ def _pad_to_square(array: np.array) -> np.array:
     # (which ever is bigger) square array.
     # pads w/ "0" by default -- would be more consistent to use empty string
     # but doesn't really matter for private func.
-    print(array)
     m, n = array.shape
 
     if m < n:
@@ -218,19 +214,25 @@ colour_map = {
 }
 
 
-def plot_puzzle(solved_puzzle, is_2d=True, colour_map=colour_map, az=0):
-    m = solved_puzzle.shape[0]
-    n = solved_puzzle.shape[1]
+def plot_puzzle(solved_puzzle, colour_map=colour_map, az=0):
+    x = solved_puzzle.shape[0]
+    y = solved_puzzle.shape[1]
+    z = solved_puzzle.shape[2]
+
+    # dumb reshaping/reindexing.
+    # arrays are easiest to view with height in first dimension,
+    # but this doesn't correspond to height when you slam em into this plotting function
+    # so we rotate this shit
+
+    solved_puzzle = np.rot90(solved_puzzle, axes=(2, 0))
+    x = solved_puzzle.shape[0]
+    y = solved_puzzle.shape[1]
+    z = solved_puzzle.shape[2]
 
     # remove X characters (non-placeable spaces)
     solved_puzzle = np.strings.replace(solved_puzzle, "X", "")
 
-    # 2d reshape condition, may be irrellevent when generalizing solving routine to 3d
-    if is_2d:
-        solved_puzzle = solved_puzzle.reshape((m, n, 1))
-
     # pad all puzzles to four voxels high for consistent display
-    z = solved_puzzle.shape[2]
     solved_puzzle = np.pad(
         solved_puzzle,
         [(0, 0), (0, 0), (0, 4 - z)],
@@ -254,8 +256,8 @@ def plot_puzzle(solved_puzzle, is_2d=True, colour_map=colour_map, az=0):
     if az != 0:
         ax.view_init(azim=az)
 
-    ax.axes.set_xlim3d(left=0, right=m)
-    ax.axes.set_ylim3d(bottom=0, top=n)
+    ax.axes.set_xlim3d(left=0, right=x)
+    ax.axes.set_ylim3d(bottom=0, top=y)
     ax.axes.set_zlim3d(bottom=0, top=4)
     ax.axis("equal")
     ax.axis("off")
@@ -291,90 +293,138 @@ class Cat_Placement:
     (Maybe it should)
 
     idx_gen is the generator used to handle placement indices.
-    Initiated at i,j,o = 0,0,0
-    Calling 'next' on the generator moves index (i,j) left to right along each row.
-    (i, j, o) -> (i, j+1, o)
-    If a row is exausted, moves down to the next row and leftmost col.
-    (i, j, o) -> (i+1, 0, o)
-    If all rows and columns exhausted:
+    Initiated at i,j,k,o = 0,0,0
+    Calling 'next' on the generator moves index (i,j,k,o) left to right along each row.
+    (i, j, k, o) -> (i, j, k+1, o)
+    If all cols in row are exausted, moves down to the next row and leftmost col.
+    (i, j, k, o) -> (i, j + 1, 0, o)
+    If all rows exhausted, resets row/col index and moves to next depth idx
+    (i, j, k, o) -> (i + 1, 0, 0, o)
+    If all cols, rows, depths exhausted:
     - move to next orientation index
-    - reset i, j to top left (0,0) index
+    - reset i, j, k to 0
     - updates orientation dependent properties
-    (i, j, o) -> (0, 0, o+1)
+    (i, j, k, o) -> (0, 0, k, o+1)
 
     Exception generated if next(idx_gen) is called when all of
     i, j, o are at their max values.
-    """  # noqa: W293
+    """
 
+    # i forget how that exception is generated
+    # or if its supposed to be explicitly defined at the end of the else
+    # block. yolo
+
+    # not sure why ijk is initiated at -1, its remapped to 0 in idx_gen_func
+    # but i don't feel like changing and troubleshooting it rn
     def __init__(
-        self, colour, grid_init, i=-1, j=-1, orientation_idx=0, cat_states=cat_states
+        self,
+        colour,
+        grid_init,
+        # pretty sure ijk here are redundant
+        i=-1,
+        j=-1,
+        k=-1,
+        orientation_idx=-1,
+        cat_states=cat_states,
     ):
         self.colour = colour
         self.orientation_idx = orientation_idx
         self.orientations = cat_states[colour]  # all possible orientations
-        self.orientation = self.orientations[orientation_idx]
-        self.o_dims = self.orientation.shape  # orienation dimensions
+        self.orientation = None
+        self.o_dims = None
         self.g_dims = grid_init.shape  # puzzle grid dimensions
-        # self.cat_size_m = self.orientation.shape[0]  #num cat rows
-        # self.cat_size_n = self.orientation.shape[1]  #num cat cols
-        # self.grid_m= grid_init.shape[0] #num grid rows
-        # self.grid_n= grid_init.shape[1] #num grid cols
-        self.i = i  # grid row placement idx
-        self.j = j  # grid col placement idx
+        self.i = i  # grid depth placement idx
+        self.j = j  # grid row placement idx
+        self.k = k  # grid col placement idx
         self.idx_gen = self.make_cat_placement_index_gen()
 
-    # def make_cat_placement_index_gen(self, grid_init):
-    def make_cat_placement_index_gen(self):
-        # grid_height = grid_init.shape[0]
-        # grid_width = grid_init.shape[1]
-        # i_max = grid_height - self.cat_size_m
-        # j_max = grid_width - self.cat_size_n
-        # o_max = len(self.orientations) - 1
+    def get_next_valid_o(self):
+        # gets next valid orientation and updates properties
+        # "valid" = piece orientation that fits within puzzle grid
+        o = self.orientation_idx
+        while True:
+            # increment index
+            o += 1
 
-        # def idx_gen_func(self, i_max=i_max, j_max=j_max, o_max=o_max):
+            # if index out of orientations range, raise exception
+            if o >= len(self.orientations):
+                raise StopIteration
+
+            # otherwise get candidate orientation
+            candidate = self.orientations[o]
+
+            # if fits within grid dimensions, break.
+            # otherwise next index and repeat.
+            if np.all(np.array(candidate.shape) <= np.array(self.g_dims)):
+                self.orientation_idx = o
+                self.orientation = self.orientations[o]
+                self.o_dims = self.orientation.shape
+
+                # print(self.orientation)
+                break
+
+    def make_cat_placement_index_gen(self):
         def idx_gen_func(self):
+            # initiate with first valid orientation
+            self.get_next_valid_o()
             # initiate col, row, orientation indices
-            i, j, o = 0, 0, 0
+            i, j, k, o = 0, 0, 0, -1
 
             # initate max indices
             o_max = len(self.orientations) - 1
+            # could make subfunction for this
             i_max = self.g_dims[0] - self.o_dims[0]
             j_max = self.g_dims[1] - self.o_dims[1]
+            k_max = self.g_dims[2] - self.o_dims[2]
 
             while True:
                 self.i = i
                 self.j = j
-                self.orientation_idx = o
-                yield i, j, o
+                self.k = k
+
+                # i don't know why i'm yielding this stuff anymore
+                # its all stored properties in the object
+
+                yield i, j, k, o
                 # increment column index check cases
                 # print("incrementing column index")
 
-                if j < j_max:
+                if k < k_max:
+                    # increment row col idx
+                    k += 1
+
+                elif j < j_max:
+                    # if exceeded max col idx but not max row idx
+                    # reset col idx and increment row idx
+                    # e.g: try to place in next row
+                    # print("exceeded column count")
+                    k = 0
                     j += 1
 
                 elif i < i_max:
-                    # if at max columns, move one row down and reset col idx
-                    # print("exceeded column count")
-                    j = 0
+                    # if also exceeded max row idx but not max depth idx
+                    #  reset row/col index to 0,0 and increment depth index
+                    # print("exceeded max row idx")
                     i += 1
-                elif o < o_max:
-                    # i and j at max but o not yet maxed
-                    # reset i,j to 0,0 and try next orientation
-                    # print("exceeded rowcount")
-                    i = 0
                     j = 0
-                    # print("updating orientation index")
-                    o += 1
-                    # update orientation and idx maxes.
-                    # print("updating self orientation")
-                    self.orientation = self.orientations[o]
-                    self.o_dims = self.orientation.shape
+                    k = 0
+                elif o < o_max:
+                    # exceeding all col/row/depth indexes
+                    # aka we're shit out of luck, onto the next orientation
+                    # reset i,j,k  to 0,0 and try next orientation
+                    # print("exceeded max depth idx")
+                    self.get_next_valid_o()
+
                     i_max = self.g_dims[0] - self.o_dims[0]
                     j_max = self.g_dims[1] - self.o_dims[1]
-                    # print("self orientation update succeded.")
+                    k_max = self.g_dims[2] - self.o_dims[2]
+
+                    i = 0
+                    j = 0
+                    k = 0
                 else:
                     # we attempted to move to an o_idx that doesn't exist.
-                    return
+                    return "All orientations exhausted"
 
         return idx_gen_func(self)
 
@@ -393,13 +443,35 @@ def _is_valid_grid(grid: np.array) -> np.array:
 def _check_idx_blocked(grid_state: np.array, o_plc: Cat_Placement) -> bool:
     # given grid state and Cat Placement object
     # checks if both orientation[0,0] and placement index i,j are non-empty.
-    o_idx = o_plc.orientation[0, 0]
+    o_idx = o_plc.orientation[0, 0, 0]
     i = o_plc.i
     j = o_plc.j
-    g_idx = grid_state[i, j]
+    k = o_plc.k
+    g_idx = grid_state[i, j, k]
 
     # if both grid and orientation indices are non-empty
     if (g_idx != "") and (o_idx != ""):
+        return True
+    else:
+        return False
+
+
+def _check_invalid_dims(grid_state: np.array, o_plc: Cat_Placement) -> bool:
+    # i think this would be unnecessary if k_max was being updated correctly
+    # but writing this as a bandaid rn
+
+    # checks that piece size is in bounds of grid
+    # probably a better place to put this logic
+    i = o_plc.i
+    j = o_plc.j
+    k = o_plc.k
+    cat_size_i, cat_size_j, cat_size_k = o_plc.o_dims
+
+    # if there's room for piece orientation, this will have same shape as piece
+    grid_target = grid_state[i : i + cat_size_i, j : j + cat_size_j, k : k + cat_size_k]
+
+    if grid_target.shape != o_plc.orientation.shape:
+        # return true, skip iteration via continue.
         return True
     else:
         return False
@@ -415,8 +487,14 @@ def _place_o_at_idx(grid_state: np.array, o_plc: Cat_Placement) -> np.array:
     # DOES NOT CHECK IF PLACEMENT IS VALID. just generates placement matrix
     i = o_plc.i
     j = o_plc.j
-    cat_size_m, cat_size_n = o_plc.o_dims
-    placement = grid_state[i : i + cat_size_m, j : j + cat_size_n] + o_plc.orientation
+    k = o_plc.k
+    # print(f"attempting to place at {(i,j,k)}")
+    cat_size_i, cat_size_j, cat_size_k = o_plc.o_dims
+    placement = (
+        grid_state[i : i + cat_size_i, j : j + cat_size_j, k : k + cat_size_k]
+        + o_plc.orientation
+    )
+
     return placement
 
 
@@ -432,10 +510,7 @@ def place_orientation(grid_state: np.array, o_plc: Cat_Placement) -> np.array:
     # loop until broken by exception or valid piece placement
     while True:
         # move to next placement index (or initiate it)
-        # print("trying next index")
         next(o_plc.idx_gen)
-
-        # print("trying to place")
 
         # if idx blocked, don't bother with placement and move to next iteration
         if _check_idx_blocked(grid_state, o_plc):
@@ -446,11 +521,10 @@ def place_orientation(grid_state: np.array, o_plc: Cat_Placement) -> np.array:
 
         # if placement is valid, update grid state and break loop.
         if _is_valid_grid(placement):
-            # print("placement is valid")
-            # print(placement)
             grid_state[
                 o_plc.i : o_plc.i + o_plc.o_dims[0],
                 o_plc.j : o_plc.j + o_plc.o_dims[1],
+                o_plc.k : o_plc.k + o_plc.o_dims[2],
             ] = placement
             break
 
@@ -478,13 +552,9 @@ def place_cat(
         # print("initiating cat object")
         o_plc = Cat_Placement(cat_col, grid_state, cat_states=cat_states)
         # print("cat object initated")
-    try:
-        # try to place o_plc at it's next o,i,j index
-        grid_state = place_orientation(grid_state, o_plc)
-        # StopIteration exception thrown if we're out of o,i,j indices
-        # might only need handling within solve_puzzle
-    except StopIteration:
-        raise
+
+    # try to place o_plc at it's next o,i,j index
+    grid_state = place_orientation(grid_state, o_plc)
 
     return grid_state, o_plc
 
@@ -520,10 +590,6 @@ def solve_puzzle(puz: Puzzle, symmetry=True, plot=True):
     cats = puz.cats
     grid_init = puz.grid
 
-    # temp conditional logic while figuring out 3d case:
-    # if grid is 1 x m x n, return m x n array.
-    if puz.layers == 1:
-        grid_init = grid_init[0]
     # sort cats by priority
     # doing this in reverse order so that we can use .pop to
     # get the highest priority piece.
@@ -534,7 +600,7 @@ def solve_puzzle(puz: Puzzle, symmetry=True, plot=True):
     for col in cats:
         cat_placements[col] = None
 
-    # to_place and placed_cols hold cat colour names, not Cat_Placements
+    # to_place and placed_cols hold cat colour names, not Cat_Placement objects
     # use colour labels to refer to objects in cat_placements dict
     # initiate to_place with all cat piece colours
     to_place = cats.copy()
@@ -559,7 +625,10 @@ def solve_puzzle(puz: Puzzle, symmetry=True, plot=True):
         try:
             # try to place piece
             grid_state, placed_cat = place_cat(grid_state, cat_col, o_plc=placement)
-        except StopIteration:
+            # really this is catching StopIterator errors
+            # but those get turned into runtime errors in generator
+            # not sure what best practice is
+        except RuntimeError:
             # the gist:
             # all placement/orientation indices exhausted with no success
             # on current grid state and current piece
@@ -599,7 +668,8 @@ def solve_puzzle(puz: Puzzle, symmetry=True, plot=True):
             cat_placements[cat_col] = placed_cat
 
     print(grid_state)
-    # hardcoding this for 2d puzzles for now
+
     if plot:
         plot_puzzle(grid_state)
+
     return grid_state, cat_placements

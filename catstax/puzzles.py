@@ -72,8 +72,8 @@ class Puzzle:
         # uncomment this condition to restrict the stacking
         # to the multilayer case while troubleshooting
 
-        #if layers > 1:
-        #reshaping depth dimension to first dimension for printing sanity
+        # if layers > 1:
+        # reshaping depth dimension to first dimension for printing sanity
         grid = np.dstack([grid] * layers).reshape(layers, max_height, max_width)
         return grid
 
@@ -123,6 +123,8 @@ Puzzle6 = Puzzle(
     cats=["arctic", "violet", "mint", "teal", "sky", "indigo", "red", "pink"],
     blocked_slices=[((1, -1), (2, 4))],
 )
+
+Puzzle7 = Puzzle(4, 2, cats=["white", "indigo", "violet", "sky"], layers=2)
 # grid13 = init_puzzle_grid(5, 6, [((1, 4), (2, 4))])
 Puzzle14 = Puzzle(
     7, 6, cats=["pink", "arctic", "violet", "green", "mint", "sky", "teal"]
@@ -148,4 +150,22 @@ Puzzle16 = Puzzle(
         "teal",
     ],
     blocked_slices=((2, 1), (2, 5), (5, 1), (5, 5)),
+)
+
+Puzzle24 = Puzzle(
+    5,
+    4,
+    cats=[
+        "arctic",
+        "indigo",
+        "teal",
+        "mint",
+        "red",
+        "yellow",
+        "white",
+        "sky",
+        "green",
+        "black",
+    ],
+    layers=3,
 )
