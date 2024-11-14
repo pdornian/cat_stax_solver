@@ -1,7 +1,7 @@
 import numpy as np
 
 # reference of valid cat colour names
-valid_cat_cols = [
+all_cats = [
     "white",
     "pink",
     "red",
@@ -23,7 +23,7 @@ class Puzzle:
     # - a (colour label) list of cats
     # - the number of layers.
     # blocked slices list may be passed slices or indices.
-    # slice is: ((i_min,  i_max), (j_min, j_max)]
+    # slice is: ((i_min,  i_max), (j_min, j_max)] (non inclusive)
     # indice is: (i, j)
     # careful with negatives
     def __init__(
@@ -66,21 +66,12 @@ class Puzzle:
                 j_min, j_max = slice[1]
                 grid[i_min:i_max, j_min:j_max] = "X"
 
-        ####THIS PART MIGHT BREAK EXISTING CODE FROM ADDING EXTRA DIMENSION IN 2D CASE,
-        # COME BACK TO IT LATER
-        # if this really goes haywire and breaks the 2d solve routine,
-        # uncomment this condition to restrict the stacking
-        # to the multilayer case while troubleshooting
-
-        # if layer > 1:
-        grid = np.dstack([grid] * layers)
+        # stack grid for number of layers
+        grid = np.vstack([grid.reshape(1, max_height, max_width)] * layers)
         return grid
 
 
 #####PUZZLE GENERATION########
-# also might change this to a class so that a puzzle is a set of cat colours
-# paired with the intial array, then solving is a method on it.
-
 
 # manually defining all one layer puzzles
 
@@ -125,6 +116,8 @@ Puzzle6 = Puzzle(
     cats=["arctic", "violet", "mint", "teal", "sky", "indigo", "red", "pink"],
     blocked_slices=[((1, -1), (2, 4))],
 )
+
+Puzzle7 = Puzzle(4, 2, cats=["white", "indigo", "violet", "sky"], layers=2)
 # grid13 = init_puzzle_grid(5, 6, [((1, 4), (2, 4))])
 Puzzle14 = Puzzle(
     7, 6, cats=["pink", "arctic", "violet", "green", "mint", "sky", "teal"]
@@ -150,4 +143,58 @@ Puzzle16 = Puzzle(
         "teal",
     ],
     blocked_slices=((2, 1), (2, 5), (5, 1), (5, 5)),
+)
+
+Puzzle18 = Puzzle(
+    4,
+    5,
+    cats=["arctic", "indigo", "teal", "yellow", "white", "sky", "red"],
+    blocked_slices=[((1, 3), (2, 3))],
+    layers=2,
+)
+Puzzle23 = Puzzle(
+    3,
+    6,
+    cats=[
+        "arctic",
+        "violet",
+        "teal",
+        "yellow",
+        "mint",
+        "pink",
+        "black",
+        "sky",
+        "red",
+    ],
+    layers=3,
+)
+
+Puzzle24 = Puzzle(
+    5,
+    4,
+    cats=[
+        "arctic",
+        "indigo",
+        "teal",
+        "mint",
+        "red",
+        "yellow",
+        "white",
+        "sky",
+        "green",
+        "black",
+    ],
+    layers=3,
+)
+
+Puzzle40 = Puzzle(5, 5, cats=all_cats, blocked_slices=[(2, 2)], layers=3)
+
+Puzzle41 = Puzzle(4, 5, cats=all_cats, blocked_slices=[((0, 1), (0, 2))], layers=4)
+
+Puzzle43 = Puzzle(
+    8, 5, cats=all_cats, blocked_slices=[(0, 0), (0, 1), (0, 3), (0, 4)], layers=2
+)
+
+Puzzle48 = Puzzle(
+    4, 5, cats=all_cats, blocked_slices=[(0, 4), (3, 4)], layers=4
 )
