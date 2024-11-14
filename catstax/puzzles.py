@@ -66,7 +66,7 @@ class Puzzle:
                 j_min, j_max = slice[1]
                 grid[i_min:i_max, j_min:j_max] = "X"
 
-        #stack grid for number of layers
+        # stack grid for number of layers
         grid = np.vstack([grid.reshape(1, max_height, max_width)] * layers)
         return grid
 
@@ -145,9 +145,13 @@ Puzzle16 = Puzzle(
     blocked_slices=((2, 1), (2, 5), (5, 1), (5, 5)),
 )
 
-Puzzle18 = Puzzle(4, 5,
-                  cats=['arctic', 'indigo', 'teal', 'yellow', 'white', 'sky', 'red'],
-                  blocked_slices=[((1, 3), (2, 3))], layers=2)
+Puzzle18 = Puzzle(
+    4,
+    5,
+    cats=["arctic", "indigo", "teal", "yellow", "white", "sky", "red"],
+    blocked_slices=[((1, 3), (2, 3))],
+    layers=2,
+)
 Puzzle23 = Puzzle(
     3,
     6,
@@ -183,4 +187,14 @@ Puzzle24 = Puzzle(
     layers=3,
 )
 
-Puzzle40 = Puzzle(5, 5, cats=all_cats, blocked_slices=[(2,2)])
+Puzzle40 = Puzzle(5, 5, cats=all_cats, blocked_slices=[(2, 2)], layers=3)
+
+Puzzle41 = Puzzle(4, 5, cats=all_cats, blocked_slices=[((0, 1), (0, 2))], layers=4)
+
+Puzzle43 = Puzzle(
+    8, 5, cats=all_cats, blocked_slices=[(0, 0), (0, 1), (0, 3), (0, 4)], layers=2
+)
+
+Puzzle48 = Puzzle(
+    4, 5, cats=all_cats, blocked_slices=[(0, 4), (3, 4)], layers=4
+)

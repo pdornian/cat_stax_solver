@@ -62,6 +62,9 @@ black[0][1] = ""
 cat_states["black"] = black
 
 # GENERATE ALL POSSIBLE ORIENTATIONS OF EACH PIECE
+# each piece has up to 24 possible orientations
+# (four rotations x 2 flips x 3 axis placements)
+# out of laziness, generate all then remove dups.
 
 # this is buildup to a dumb manual function (_remove_dup_arrays)
 # for removing duplicate arrays in a list of m x n numpy arrays because:
@@ -74,9 +77,7 @@ cat_states["black"] = black
 
 def _pad_to_square(array: np.array) -> np.array:
     # given m x n numpy array, pads with 0's so it is an m x m or n x n
-    # (which ever is bigger) square array.
     # pads w/ "0" by default -- would be more consistent to use empty string
-    # but doesn't really matter for private func.
     m, n = array.shape
 
     if m < n:
@@ -93,7 +94,7 @@ def _remove_padding(array: np.array) -> np.array:
     # cleanup function for recovering original array from padded square
     # removes final column/row if it's '0'
     # only checking -1 indice bc _pad_to_square will
-    # add a max of 1 row or column on default tileset, but this isn't forced.
+    # add a max of 1 row or column on default tileset,
 
     # if last column is padding
     if (array[:, -1] == "0").all():
@@ -213,6 +214,9 @@ colour_map = {
     "W": "white",
 }
 
+# still haven't figured out the magic way to rotate this
+# so that plot is inline with numpy array display of placements
+
 
 def plot_puzzle(solved_puzzle, colour_map=colour_map, az=0):
     x = solved_puzzle.shape[0]
@@ -222,9 +226,14 @@ def plot_puzzle(solved_puzzle, colour_map=colour_map, az=0):
     # dumb reshaping/reindexing.
     # arrays are easiest to view with height in first dimension,
     # but this doesn't correspond to height when you slam em into this plotting function
-    # so we rotate this shit
+    # so we rotate and flip
+    # this shit to make view align with array presentation
 
-    solved_puzzle = np.rot90(solved_puzzle, axes=(2, 0))
+    # these transformations were mostly trial and error
+    # can almost certainly be simplified
+    solved_puzzle = np.rot90(solved_puzzle, axes=(2, 0), k=3)
+    solved_puzzle = np.rot90(solved_puzzle, axes=(1, 2), k=-2)
+    solved_puzzle = np.flip(solved_puzzle, axis=0)
     x = solved_puzzle.shape[0]
     y = solved_puzzle.shape[1]
     z = solved_puzzle.shape[2]
@@ -321,21 +330,21 @@ class Cat_Placement:
         colour,
         grid_init,
         # pretty sure ijk here are redundant
-        i=-1,
-        j=-1,
-        k=-1,
-        orientation_idx=-1,
+        # i=-1,
+        # j=-1,
+        # k=-1,
+        # orientation_idx=-1,
         cat_states=cat_states,
     ):
         self.colour = colour
-        self.orientation_idx = orientation_idx
+        self.orientation_idx = -1
         self.orientations = cat_states[colour]  # all possible orientations
         self.orientation = None
         self.o_dims = None
         self.g_dims = grid_init.shape  # puzzle grid dimensions
-        self.i = i  # grid depth placement idx
-        self.j = j  # grid row placement idx
-        self.k = k  # grid col placement idx
+        self.i = None  # grid depth placement idx
+        self.j = None  # grid row placement idx
+        self.k = None  # grid col placement idx
         self.idx_gen = self.make_cat_placement_index_gen()
 
     def get_next_valid_o(self):
@@ -368,8 +377,8 @@ class Cat_Placement:
             # initiate with first valid orientation
             self.get_next_valid_o()
             # initiate col, row, orientation indices
-            i, j, k, o = 0, 0, 0, -1
-
+            i, j, k = 0, 0, 0
+            o = self.orientation_idx
             # initate max indices
             o_max = len(self.orientations) - 1
             # could make subfunction for this
@@ -456,33 +465,12 @@ def _check_idx_blocked(grid_state: np.array, o_plc: Cat_Placement) -> bool:
         return False
 
 
-def _check_invalid_dims(grid_state: np.array, o_plc: Cat_Placement) -> bool:
-    # i think this would be unnecessary if k_max was being updated correctly
-    # but writing this as a bandaid rn
-
-    # checks that piece size is in bounds of grid
-    # probably a better place to put this logic
-    i = o_plc.i
-    j = o_plc.j
-    k = o_plc.k
-    cat_size_i, cat_size_j, cat_size_k = o_plc.o_dims
-
-    # if there's room for piece orientation, this will have same shape as piece
-    grid_target = grid_state[i : i + cat_size_i, j : j + cat_size_j, k : k + cat_size_k]
-
-    if grid_target.shape != o_plc.orientation.shape:
-        # return true, skip iteration via continue.
-        return True
-    else:
-        return False
-
-
 # PLACEMENT OF PIECES
 
 
 def _place_o_at_idx(grid_state: np.array, o_plc: Cat_Placement) -> np.array:
-    # given a grid state and a Cat_Placement orientation with current index i,j,
-    # returns placement matrix of attempting to place orientation at i,j
+    # given a grid state and a Cat_Placement orientation with current index i,j,k
+    # returns placement matrix of attempting to place orientation at i,j, k
     # (subset of array with piece slammed on top of it)
     # DOES NOT CHECK IF PLACEMENT IS VALID. just generates placement matrix
     i = o_plc.i
@@ -581,7 +569,6 @@ cat_priority = {
 }
 
 
-# def solve_puzzle(cats: list[str], grid_init: np.array, symmetry=True, plot=True):
 def solve_puzzle(puz: Puzzle, symmetry=True, plot=True):
     # needs a docstring
 
